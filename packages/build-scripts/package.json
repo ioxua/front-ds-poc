@@ -1,0 +1,44 @@
+{
+  "name": "build-scripts",
+  "version": "0.0.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "license": "MIT",
+  "files": [
+    "dist/**"
+  ],
+  "bin": "./dist/build-scripts.js",
+  "scripts": {
+    "build:old": "esbuild src/index.ts --bundle --platform=node  --outfile=dist/build-scripts.js",
+    "build:boots": "ts-node -r tsconfig-paths/register src/bootstrap.ts",
+    "build": "esbuild src/bootstrap.ts --outfile=dist/bootstrap.mjs  --platform=node && node dist/bootstrap.mjs",
+    "dev": "tsup src/index.tsx --format esm,cjs --watch --dts --external react",
+    "lint": "eslint src/",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.9",
+    "@types/react-dom": "^18.0.4",
+    "browser-sync": "^2.29.3",
+    "commander": "^11.1.0",
+    "del": "^7.1.0",
+    "esbuild": "^0.19.5",
+    "esbuild-plugin-replace": "^1.4.0",
+    "eslint-config-custom": "*",
+    "get-port": "^7.0.0",
+    "ora": "^7.0.1",
+    "recursive-copy": "^2.0.14",
+    "ts-node": "^10.9.1",
+    "tsconfig": "*",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.2.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "emitter": "^0.0.5"
+  }
+}
