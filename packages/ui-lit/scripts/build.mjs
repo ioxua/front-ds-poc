@@ -1,95 +1,38 @@
 import { deleteAsync } from 'del';
-import { exec, spawn } from 'child_process';
+import { exec } from 'child_process';
 import { globby } from 'globby';
-import browserSync from 'browser-sync';
+//import browserSync from 'browser-sync';
 import chalk from 'chalk';
-import commandLineArgs from 'command-line-args';
 import copy from 'recursive-copy';
-import esbuild from 'esbuild';
+import * as esbuild from 'esbuild';
 import fs from 'fs/promises';
-import getPort, { portNumbers } from 'get-port';
 import ora from 'ora';
 import util from 'util';
 import * as path from 'path';
 import { readFileSync } from 'fs';
 import { replace } from 'esbuild-plugin-replace';
 
-const { serve } = commandLineArgs([{ name: 'serve', type: Boolean }]);
 const outdir = 'dist';
 const cdndir = 'cdn';
 const sitedir = '_site';
 const spinner = ora({ hideCursor: false }).start();
 const execPromise = util.promisify(exec);
-let childProcess;
+// let childProcess;
 let buildResults;
+
+const serve = false
 
 const bundleDirectories = [cdndir, outdir];
 let packageData = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
 const shoelaceVersion = JSON.stringify(packageData.version.toString());
 
 //
-// Runs 11ty and builds the docs. The returned promise resolves after the initial publish has completed. The child
-// process and an array of strings containing any output are included in the resolved promise.
-//
-async function buildTheDocs(watch = false) {
-  return new Promise(async (resolve, reject) => {
-    const afterSignal = '[eleventy.after]';
-
-    // Totally non-scientific way to handle errors. Perhaps its just better to resolve on stderr? :shrug:
-    const errorSignal = 'Original error stack trace:';
-    const args = ['@11ty/eleventy', '--quiet'];
-    const output = [];
-
-    if (watch) {
-      args.push('--watch');
-      args.push('--incremental');
-    }
-
-    const child = spawn('npx', args, {
-      stdio: 'pipe',
-      cwd: 'docs',
-      shell: true // for Windows
-    });
-
-    child.stdout.on('data', data => {
-      if (data.includes(afterSignal)) return; // don't log the signal
-      output.push(data.toString());
-    });
-
-    child.stderr.on('data', data => {
-      output.push(data.toString());
-    });
-
-    if (watch) {
-      // The process doesn't terminate in watch mode so, before resolving, we listen for a known signal in stdout that
-      // tells us when the first build completes.
-      child.stdout.on('data', data => {
-        if (data.includes(afterSignal)) {
-          resolve({ child, output });
-        }
-      });
-
-      child.stderr.on('data', data => {
-        if (data.includes(errorSignal)) {
-          // This closes the dev server, not sure if thats what we want?
-          reject(output);
-        }
-      });
-    } else {
-      child.on('close', () => {
-        resolve({ child, output });
-      });
-    }
-  });
-}
-
-//
 // Builds the source with esbuild.
 //
-async function buildTheSource() {
+async function buildTheSource(serve/*: boolean*/) {
   const alwaysExternal = ['@lit/react', 'react'];
 
-  const cdnConfig = {
+  const cdnConfig/*: BuildOptions*/ = {
     format: 'esm',
     target: 'es2017',
     entryPoints: [
@@ -97,9 +40,9 @@ async function buildTheSource() {
       // NOTE: Entry points must be mapped in package.json > exports, otherwise users won't be able to import them!
       //
       // The whole shebang
-      './src/shoelace.ts',
+      './src/index.ts',
       // The auto-loader
-      './src/shoelace-autoloader.ts',
+      // './src/shoelace-autoloader.ts',
       // Components
       ...(await globby('./src/components/**/!(*.(style|test)).ts')),
       // Translations
@@ -133,7 +76,7 @@ async function buildTheSource() {
     ]
   };
 
-  const npmConfig = {
+  const npmConfig/*: BuildOptions*/ = {
     ...cdnConfig,
     external: undefined,
     minify: false,
@@ -158,9 +101,9 @@ async function buildTheSource() {
 function handleCleanup() {
   buildResults.forEach(result => result.dispose());
 
-  if (childProcess) {
-    childProcess.kill('SIGINT');
-  }
+  // if (childProcess) {
+  //   childProcess.kill('SIGINT');
+  // }
 
   process.exit();
 }
@@ -190,25 +133,25 @@ await nextTask('Cleaning up the previous build', async () => {
   await fs.mkdir(outdir, { recursive: true });
 });
 
-await nextTask('Generating component metadata', () => {
-  return Promise.all(
-    bundleDirectories.map(dir => {
-      return execPromise(`node scripts/make-metadata.js --outdir "${dir}"`, { stdio: 'inherit' });
-    })
-  );
-});
+// await nextTask('Generating component metadata', () => {
+//   return Promise.all(
+//     bundleDirectories.map(dir => {
+//       return execPromise(`node scripts/make-metadata.js --outdir "${dir}"`, { stdio: 'inherit' });
+//     })
+//   );
+// });
 
-await nextTask('Wrapping components for React', () => {
-  return execPromise(`node scripts/make-react.js --outdir "${outdir}"`, { stdio: 'inherit' });
-});
+// await nextTask('Wrapping components for React', () => {
+//   return execPromise(`node scripts/make-react.js --outdir "${outdir}"`, { stdio: 'inherit' });
+// });
 
-await nextTask('Generating themes', () => {
-  return execPromise(`node scripts/make-themes.js --outdir "${outdir}"`, { stdio: 'inherit' });
-});
+// await nextTask('Generating themes', () => {
+//   return execPromise(`node scripts/make-themes.js --outdir "${outdir}"`, { stdio: 'inherit' });
+// });
 
-await nextTask('Packaging up icons', () => {
-  return execPromise(`node scripts/make-icons.js --outdir "${outdir}"`, { stdio: 'inherit' });
-});
+// await nextTask('Packaging up icons', () => {
+//   return execPromise(`node scripts/make-icons.js --outdir "${outdir}"`, { stdio: 'inherit' });
+// });
 
 await nextTask('Running the TypeScript compiler', () => {
   return execPromise(`tsc --project ./tsconfig.prod.json --outdir "${outdir}"`, { stdio: 'inherit' });
@@ -221,7 +164,7 @@ await nextTask(`Themes, Icons, and TS Types to "${cdndir}"`, async () => {
 });
 
 await nextTask('Building source files', async () => {
-  buildResults = await buildTheSource();
+  buildResults = await buildTheSource(serve);
 });
 
 // Copy the CDN build to the docs (prod only; we use a virtual directory in dev)
@@ -243,9 +186,10 @@ if (serve) {
   // eleventy.after, so it appears after the docs are fully published. This is kinda hacky, but here we are.
   // Kick off the Eleventy dev server with --watch and --incremental
   await nextTask('Building docs', async () => {
-    result = await buildTheDocs(true);
+    console.log('skipping docs...')
   });
 
+  /*
   const bs = browserSync.create();
   const port = await getPort({ port: portNumbers(4000, 4999) });
   const browserSyncConfig = {
@@ -282,7 +226,7 @@ if (serve) {
   });
 
   // Rebuild and reload when source files change
-  bs.watch('src/**/!(*.test).*').on('change', async filename => {
+  bs.watch('src/** /!(*.test).*').on('change', async filename => {
     console.log('[build] File changed: ', filename);
 
     try {
@@ -318,9 +262,9 @@ if (serve) {
   });
 
   // Reload without rebuilding when the docs change
-  bs.watch([`${sitedir}/**/*.*`]).on('change', filename => {
+  bs.watch([`${sitedir}/** /*.*`]).on('change', filename => {
     bs.reload();
-  });
+  }); */
 }
 
 // Build for production
@@ -328,11 +272,11 @@ if (!serve) {
   let result;
 
   await nextTask('Building the docs', async () => {
-    result = await buildTheDocs();
+    console.log('skipping docs...')
   });
 
   // Log deferred output
-  if (result.output.length > 0) {
+  if (result?.output.length > 0) {
     console.log('\n' + result.output.join('\n'));
   }
 }

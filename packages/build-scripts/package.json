@@ -13,7 +13,7 @@
   "scripts": {
     "build:old": "esbuild src/index.ts --bundle --platform=node  --outfile=dist/build-scripts.js",
     "build:boots": "ts-node -r tsconfig-paths/register src/bootstrap.ts",
-    "build": "esbuild src/bootstrap.ts --outfile=dist/bootstrap.mjs  --platform=node && node dist/bootstrap.mjs",
+    "build": "esbuild src/index.ts --outfile=dist/index.mjs  --platform=node && node dist/bootstrap.mjs",
     "dev": "tsup src/index.tsx --format esm,cjs --watch --dts --external react",
     "lint": "eslint src/",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist"
