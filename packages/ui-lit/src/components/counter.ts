@@ -7,14 +7,8 @@ import { customElement, property } from 'lit/decorators.js'
  * @slot - This element has a slot
  * @csspart button - The button
  */
-@customElement('my-element')
-export class MyElement extends LitElement {
-  /**
-   * Copy for the read the docs hint.
-   */
-  @property()
-  docsHint = 'Click on the Vite and Lit logos to learn more'
-
+@customElement('ds-counter')
+export class DsCounter extends LitElement {
   /**
    * The number of times the button has been clicked.
    */
@@ -29,7 +23,6 @@ export class MyElement extends LitElement {
           count is ${this.count}
         </button>
       </div>
-      <p class="read-the-docs">${this.docsHint}</p>
     `
   }
 
@@ -112,6 +105,6 @@ export class MyElement extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'my-element': MyElement
+    'ds-counter': DsCounter
   }
 }

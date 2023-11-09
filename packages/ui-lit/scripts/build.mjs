@@ -40,7 +40,7 @@ async function buildTheSource(serve/*: boolean*/) {
       // NOTE: Entry points must be mapped in package.json > exports, otherwise users won't be able to import them!
       //
       // The whole shebang
-      './src/index.ts',
+      './src/ds-poc.ts',
       // The auto-loader
       // './src/shoelace-autoloader.ts',
       // Components

@@ -1,8 +1,8 @@
 import {LitElement, css, html} from 'lit';
 import {customElement, property} from 'lit/decorators.js';
 
-@customElement('simple-greeting')
-export class SimpleGreeting extends LitElement {
+@customElement('ds-greeting')
+export class DsGreeting extends LitElement {
   // Define scoped styles right with your component, in plain CSS
   static styles = css`
     :host {
@@ -22,6 +22,6 @@ export class SimpleGreeting extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'simple-greeting': SimpleGreeting
+    'ds-greeting': DsGreeting
   }
 }
